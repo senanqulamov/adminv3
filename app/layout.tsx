@@ -12,7 +12,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "Multi-Project Admin Panel",
+  title: "Admin v3",
   description: "Comprehensive admin panel for managing multiple projects",
     generator: 'v0.dev'
 }
@@ -23,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`dark ${inter.variable}`}>
+    <html lang="en" className={`dark ${inter.variable}`} suppressHydrationWarning={true}>
       <body className={inter.className}>
         <AdminProvider>{children}</AdminProvider>
       </body>

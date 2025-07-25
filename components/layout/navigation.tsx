@@ -27,31 +27,31 @@ export function Navigation() {
   }
 
   return (
-    <nav className="px-6 py-4 border-b border-[#2a2a2a] bg-[#1f1f1f]/50 backdrop-blur-sm">
-      <div className="flex space-x-2">
-        {navigationItems.map((item) => (
-          <Button
-            key={item.path}
-            variant="ghost"
-            onClick={() => handleNavigation(item.path)}
-            disabled={isPending}
-            className={`px-8 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 smooth-transition ${
-              pathname === item.path
-                ? "bg-[#171717] text-white border border-[#2a2a2a] shadow-lg"
-                : "text-gray-400 hover:text-white hover:bg-[#252525]/50"
-            }`}
-          >
-            {isPending && activeTab === item.path ? (
-              <div className="flex items-center space-x-2">
-                <LoadingSpinner size="sm" />
-                <span>{item.name}</span>
-              </div>
-            ) : (
-              item.name
-            )}
-          </Button>
-        ))}
-      </div>
-    </nav>
+      <nav className="px-6 py-4 border-b border-border bg-card/50 backdrop-blur-sm no-select">
+        <div className="flex space-x-2">
+          {navigationItems.map((item) => (
+              <Button
+                  key={item.path}
+                  variant="ghost"
+                  onClick={() => handleNavigation(item.path)}
+                  disabled={isPending}
+                  className={`px-8 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 smooth-transition ${
+                      pathname === item.path
+                          ? "bg-primary text-primary-foreground shadow-lg"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  }`}
+              >
+                {isPending && activeTab === item.path ? (
+                    <div className="flex items-center space-x-2">
+                      <LoadingSpinner size="sm" />
+                      <span>{item.name}</span>
+                    </div>
+                ) : (
+                    item.name
+                )}
+              </Button>
+          ))}
+        </div>
+      </nav>
   )
 }

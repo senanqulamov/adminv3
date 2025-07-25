@@ -1,0 +1,185 @@
+// Mock data for development
+import type { User, Translation, Order, Notification, Analytics } from "./api"
+
+export const mockUsers: User[] = [
+  {
+    id: 1,
+    name: "John Doe",
+    email: "john@example.com",
+    role: "Admin",
+    status: "Active",
+    lastLogin: "2 hours ago",
+    avatar: "/placeholder.svg?height=40&width=40",
+    createdAt: "2024-01-15",
+    permissions: ["read", "write", "delete", "admin"],
+  },
+  {
+    id: 2,
+    name: "Jane Smith",
+    email: "jane@example.com",
+    role: "Editor",
+    status: "Active",
+    lastLogin: "1 day ago",
+    avatar: "/placeholder.svg?height=40&width=40",
+    createdAt: "2024-01-10",
+    permissions: ["read", "write"],
+  },
+  {
+    id: 3,
+    name: "Mike Johnson",
+    email: "mike@example.com",
+    role: "User",
+    status: "Inactive",
+    lastLogin: "1 week ago",
+    avatar: "/placeholder.svg?height=40&width=40",
+    createdAt: "2024-01-05",
+    permissions: ["read"],
+  },
+  {
+    id: 4,
+    name: "Sarah Wilson",
+    email: "sarah@example.com",
+    role: "Editor",
+    status: "Active",
+    lastLogin: "3 hours ago",
+    avatar: "/placeholder.svg?height=40&width=40",
+    createdAt: "2024-01-12",
+    permissions: ["read", "write"],
+  },
+]
+
+export const mockTranslations: Translation[] = [
+  {
+    id: 1,
+    key: "welcome.title",
+    en: "Welcome to our platform",
+    es: "Bienvenido a nuestra plataforma",
+    fr: "Bienvenue sur notre plateforme",
+    status: "Complete",
+    lastModified: "2024-01-15",
+    category: "UI",
+  },
+  {
+    id: 2,
+    key: "nav.dashboard",
+    en: "Dashboard",
+    es: "Panel de control",
+    fr: "Tableau de bord",
+    status: "Complete",
+    lastModified: "2024-01-14",
+    category: "Navigation",
+  },
+  {
+    id: 3,
+    key: "button.save",
+    en: "Save",
+    es: "Guardar",
+    fr: "",
+    status: "Incomplete",
+    lastModified: "2024-01-13",
+    category: "Actions",
+  },
+]
+
+export const mockOrders: Order[] = [
+  {
+    id: "#ORD-001",
+    customer: "John Doe",
+    product: "Premium Plan",
+    amount: "$99.00",
+    status: "Completed",
+    date: "2024-01-15",
+    items: 1,
+    paymentMethod: "Credit Card",
+  },
+  {
+    id: "#ORD-002",
+    customer: "Jane Smith",
+    product: "Basic Plan",
+    amount: "$29.00",
+    status: "Pending",
+    date: "2024-01-15",
+    items: 1,
+    paymentMethod: "PayPal",
+  },
+]
+
+export const mockNotifications: Notification[] = [
+  {
+    id: 1,
+    title: "New User Registration",
+    message: "A new user has registered: sarah@example.com",
+    type: "info",
+    read: false,
+    createdAt: "2024-01-15T10:30:00Z",
+    actionUrl: "/users",
+  },
+  {
+    id: 2,
+    title: "Order Completed",
+    message: "Order #ORD-001 has been completed successfully",
+    type: "success",
+    read: false,
+    createdAt: "2024-01-15T09:15:00Z",
+    actionUrl: "/orders",
+  },
+  {
+    id: 3,
+    title: "Translation Missing",
+    message: "French translation missing for 'button.save'",
+    type: "warning",
+    read: true,
+    createdAt: "2024-01-14T16:45:00Z",
+    actionUrl: "/translations",
+  },
+]
+
+export const mockAnalytics: Analytics = {
+  users: {
+    total: 2847,
+    active: 2456,
+    inactive: 391,
+    newThisMonth: 234,
+    growthRate: 12.5,
+    byRole: [
+      { role: "Admin", count: 12 },
+      { role: "Editor", count: 156 },
+      { role: "User", count: 2679 },
+    ],
+    activityData: [
+      { date: "2024-01-01", count: 120 },
+      { date: "2024-01-02", count: 145 },
+      { date: "2024-01-03", count: 167 },
+      { date: "2024-01-04", count: 189 },
+      { date: "2024-01-05", count: 203 },
+    ],
+  },
+  orders: {
+    total: 1234,
+    completed: 1089,
+    pending: 145,
+    revenue: 124567,
+    growthRate: 8.3,
+    recentOrders: mockOrders,
+    revenueData: [
+      { date: "2024-01-01", amount: 12450 },
+      { date: "2024-01-02", amount: 13200 },
+      { date: "2024-01-03", amount: 11800 },
+      { date: "2024-01-04", amount: 14600 },
+      { date: "2024-01-05", amount: 15300 },
+    ],
+  },
+  translations: {
+    totalKeys: 1247,
+    completed: 1109,
+    incomplete: 138,
+    languages: 8,
+    completionRate: 89,
+    byLanguage: [
+      { language: "English", completed: 1247, total: 1247 },
+      { language: "Spanish", completed: 1156, total: 1247 },
+      { language: "French", completed: 1089, total: 1247 },
+      { language: "German", completed: 967, total: 1247 },
+    ],
+  },
+}

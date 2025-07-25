@@ -1,40 +1,43 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
 import { Header } from "./header"
 import { Navigation } from "./navigation"
-import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { ProfilePage } from "@/components/pages/profile-page"
+import { SettingsPage } from "@/components/pages/settings-page"
+import { useAdmin } from "@/components/providers/admin-provider"
+import { usePathname } from "next/navigation"
 
 interface AdminLayoutProps {
-  children: React.ReactNode
+    children: React.ReactNode
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
-  const [isLoading, setIsLoading] = useState(true)
+    const { viewMode } = useAdmin()
+    const pathname = usePathname()
+    const isDashboard = pathname === "/" || pathname === "/translations" || pathname === "/orders"
 
-  useEffect(() => {
-    // Simulate initial loading
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 800)
+    const renderContent = () => {
+        switch (viewMode) {
+            case "profile":
+                return <ProfilePage />
+            case "settings":
+                return <SettingsPage />
+            case "dashboard":
+            default:
+                return (
+                    <>
+                        {isDashboard && <Navigation />}
+                        <main className="container mx-auto px-6 py-8">{children}</main>
+                    </>
+                )
+        }
+    }
 
-    return () => clearTimeout(timer)
-  }, [])
-
-  if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#171717] flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
+        <div className="min-h-screen bg-[#0a0a0a]">
+            <Header />
+            {renderContent()}
+        </div>
     )
-  }
-
-  return (
-    <div className="min-h-screen bg-[#171717] text-white smooth-transition">
-      <Header />
-      <Navigation />
-      <main className="px-6 py-8 animate-slide-up">{children}</main>
-    </div>
-  )
 }

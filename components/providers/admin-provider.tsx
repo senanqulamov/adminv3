@@ -10,11 +10,15 @@ interface Project {
   apiUrl: string
 }
 
+type ViewMode = "dashboard" | "profile" | "settings"
+
 interface AdminContextType {
   currentProject: Project
   projects: Project[]
   switchProject: (projectId: string) => void
   isLoading: boolean
+  viewMode: ViewMode
+  setViewMode: (mode: ViewMode) => void
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined)
@@ -44,6 +48,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [currentProject, setCurrentProject] = useState<Project>(defaultProjects[0])
   const [projects] = useState<Project[]>(defaultProjects)
   const [isLoading, setIsLoading] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>("dashboard")
 
   const switchProject = async (projectId: string) => {
     setIsLoading(true)
@@ -74,6 +79,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         projects,
         switchProject,
         isLoading,
+        viewMode,
+        setViewMode,
       }}
     >
       {children}
