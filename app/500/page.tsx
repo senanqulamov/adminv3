@@ -6,9 +6,6 @@ import { RefreshCw, Home, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 
 export default function ServerErrorPage() {
-  const handleRefresh = () => {
-    window.location.reload()
-  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -29,7 +26,7 @@ export default function ServerErrorPage() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
-              onClick={handleRefresh}
+              onClick={() => window.location.reload()}
               className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl px-6 py-3"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
