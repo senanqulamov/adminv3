@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -14,8 +14,16 @@ import { AnalyticsModal } from "@/components/modals/analytics-modal"
 import { AddUserModal } from "@/components/modals/add-user-modal"
 import { ViewUserModal } from "@/components/modals/view-user-modal"
 import { EditUserModal } from "@/components/modals/edit-user-modal"
-import { mockUsers } from "@/lib/mock-data"
-import type { User } from "@/lib/api"
+import { apiClient, User } from "@/lib/api"
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationLink,
+    PaginationPrevious,
+    PaginationNext,
+    PaginationEllipsis,
+} from "@/components/ui/pagination"
 
 const statsCards = [
     {
@@ -66,63 +74,130 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
     const [showAddUser, setShowAddUser] = useState(false)
     const [viewUser, setViewUser] = useState<User | null>(null)
     const [editUser, setEditUser] = useState<User | null>(null)
+    const [searchQuery, setSearchQuery] = useState("") // Separate state for actual search query
+    const [isSearching, setIsSearching] = useState(false)
+
+    const [currentPage, setCurrentPage] = useState(1)
+    const [rowsPerPage] = useState(10)
+    const [totalUsers, setTotalUsers] = useState(0)
+
+    const fetchUsers = useCallback(async () => {
+        setIsLoading(true)
+        try {
+            const res = await apiClient.getUsers({
+                page: currentPage,
+                limit: rowsPerPage,
+                search: searchQuery,
+                role: roleFilter,
+                status: statusFilter
+            })
+
+            const mappedUsers = res.data.map((u: any) => ({
+                id: u.id?.toString() ?? "",
+                name: u.name ?? "",
+                email: u.email ?? "",
+                bio: u.bio ?? "",
+                role: u.isAdmin ? "Admin" : (u.role ?? "User"),
+                isVerified: !!u.isVerified,
+                lastLogin: u.updatedAt ?? "",
+                karmaPoints: u.karmaPoints ?? 0,
+                karmaQuants: u.karmaQuants ?? 0,
+                profilePicture: u.profilePicture ?? undefined,
+                createdAt: u.createdAt ?? "",
+                isAdmin: !!u.isAdmin,
+                updatedAt: u.updatedAt ?? "",
+            }))
+
+            setUsers(mappedUsers)
+            setTotalUsers(res.total ?? 0)
+        } catch (err) {
+            console.error("Error fetching users:", err)
+        } finally {
+            setIsLoading(false)
+            setIsSearching(false)
+        }
+    }, [currentPage, searchQuery, roleFilter, statusFilter, rowsPerPage])
 
     useEffect(() => {
-        if (externalLoading) {
-            setIsLoading(true)
-            const timer = setTimeout(() => {
-                setUsers(mockUsers)
-                setIsLoading(false)
-            }, 1000)
-            return () => clearTimeout(timer)
-        } else {
-            const timer = setTimeout(() => {
-                setUsers(mockUsers)
-                setIsLoading(false)
-            }, 600)
-            return () => clearTimeout(timer)
+        fetchUsers()
+    }, [fetchUsers])
+
+    const handleSearch = () => {
+        setCurrentPage(1)
+        setSearchQuery(searchTerm)
+        setIsSearching(true)
+    }
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            handleSearch()
         }
-    }, [externalLoading])
-
-    const filteredUsers = users.filter((user) => {
-        const matchesSearch =
-            user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase())
-        const matchesRole = roleFilter === "all" || user.role === roleFilter
-        const matchesStatus = statusFilter === "all" || user.status === statusFilter
-
-        return matchesSearch && matchesRole && matchesStatus
-    })
+    }
 
     const handleCardClick = (type: "users" | "orders" | "translations" | "audit", title: string) => {
         setSelectedAnalytics({ isOpen: true, type, title })
     }
 
-    const handleDeleteUser = (id: number) => {
-        setUsers((prev) => prev.filter((user) => user.id !== id))
+    const handleDeleteUser = async (id: string) => {
+        setIsLoading(true)
+        try {
+            await apiClient.deleteUser(id)
+            setUsers((prev) => prev.filter((user) => user.id !== id))
+            setTotalUsers((prev) => prev - 1)
+        } catch (err) {
+            console.error("Failed to delete user:", err)
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     const handleUserUpdated = (updatedUser: User) => {
-        console.log(updatedUser)
         setUsers((prev) => prev.map((user) => (user.id === updatedUser.id ? updatedUser : user)))
         setEditUser(null)
     }
 
     if (isLoading || externalLoading) {
         return (
-            <div className="tab-loader flex items-center justify-center">
+            <div className="flex items-center justify-center h-full">
                 <LoadingSpinner size="lg" />
             </div>
         )
+    }
+
+    const totalPages = Math.max(1, Math.ceil(totalUsers / rowsPerPage))
+
+    const getPaginationItems = () => {
+        const items: (number | "ellipsis")[] = []
+        const maxVisiblePages = 5
+
+        if (totalPages <= maxVisiblePages) {
+            for (let i = 1; i <= totalPages; i++) items.push(i)
+        } else {
+            const leftBound = Math.max(2, currentPage - 1)
+            const rightBound = Math.min(totalPages - 1, currentPage + 1)
+
+            items.push(1)
+
+            if (leftBound > 2) items.push("ellipsis")
+            else if (currentPage === maxVisiblePages) items.push(2)
+
+            for (let i = leftBound; i <= rightBound; i++) items.push(i)
+
+            if (rightBound < totalPages - 1) items.push("ellipsis")
+            else if (currentPage === totalPages - (maxVisiblePages - 1)) items.push(totalPages - 1)
+
+            items.push(totalPages)
+        }
+        return items
     }
 
     return (
         <>
             <div className="space-y-8 animate-slide-up">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-3xl font-bold text-foreground tracking-tight no-select">Users</h1>
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Users</h1>
                     <Button
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl px-6 py-3 font-semibold smooth-transition shadow-lg hover:shadow-xl no-select"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl px-6 py-3 font-semibold shadow-lg hover:shadow-xl"
                         onClick={() => setShowAddUser(true)}
                     >
                         <Plus className="h-4 w-4 mr-2" />
@@ -132,7 +207,7 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
 
                 <Card className="bg-card-light border-border rounded-3xl p-8 shadow-2xl animate-scale-in">
                     <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-xl font-semibold text-foreground tracking-tight no-select">All Users</h2>
+                        <h2 className="text-xl font-semibold text-foreground tracking-tight">All Users</h2>
                         <div className="flex items-center space-x-4">
                             <Select value={roleFilter} onValueChange={setRoleFilter}>
                                 <SelectTrigger className="w-32 bg-background border-border text-foreground rounded-2xl h-12">
@@ -140,9 +215,8 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
                                 </SelectTrigger>
                                 <SelectContent className="bg-card border-border rounded-2xl">
                                     <SelectItem value="all">All Roles</SelectItem>
-                                    <SelectItem value="Admin">Admin</SelectItem>
-                                    <SelectItem value="Editor">Editor</SelectItem>
-                                    <SelectItem value="User">User</SelectItem>
+                                    <SelectItem value="1">Admin</SelectItem>
+                                    <SelectItem value="0">User</SelectItem>
                                 </SelectContent>
                             </Select>
 
@@ -157,14 +231,24 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
                                 </SelectContent>
                             </Select>
 
-                            <div className="relative">
+                            <div className="relative flex items-center">
                                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Search users..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-12 bg-background border-border text-foreground rounded-2xl w-80 h-12 smooth-transition focus:border-primary/50"
+                                    onKeyDown={handleKeyDown}
+                                    className="pl-12 bg-background border-border text-foreground rounded-2xl w-80 h-12 focus:border-primary/50"
                                 />
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-2 h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                                    onClick={handleSearch}
+                                    disabled={isSearching}
+                                >
+                                    {isSearching ? <LoadingSpinner size="sm" /> : <Search className="h-4 w-4" />}
+                                </Button>
                             </div>
                         </div>
                     </div>
@@ -173,7 +257,7 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
                         {statsCards.map((card, index) => (
                             <Card
                                 key={card.title}
-                                className="bg-card-main border-border rounded-3xl p-6 hover:bg-accent smooth-transition shadow-lg hover:shadow-xl animate-scale-in cursor-pointer no-select"
+                                className={`bg-card-main border-border rounded-3xl p-6 hover:bg-accent shadow-lg hover:shadow-xl animate-scale-in cursor-pointer`}
                                 style={{ animationDelay: `${index * 100}ms` }}
                                 onClick={() => handleCardClick(card.type, card.title)}
                             >
@@ -194,85 +278,145 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
                         <Table>
                             <TableHeader>
                                 <TableRow className="border-border hover:bg-accent/50">
-                                    <TableHead className="text-muted-foreground font-semibold tracking-wide py-4 no-select">
+                                    <TableHead className="text-muted-foreground font-semibold tracking-wide py-4">
+                                        #
+                                    </TableHead>
+                                    <TableHead className="text-muted-foreground font-semibold tracking-wide py-4">
                                         Name
                                     </TableHead>
-                                    <TableHead className="text-muted-foreground font-semibold tracking-wide no-select">Email</TableHead>
-                                    <TableHead className="text-muted-foreground font-semibold tracking-wide no-select">Role</TableHead>
-                                    <TableHead className="text-muted-foreground font-semibold tracking-wide no-select">Status</TableHead>
-                                    <TableHead className="text-muted-foreground font-semibold tracking-wide no-select">
+                                    <TableHead className="text-muted-foreground font-semibold tracking-wide">Email</TableHead>
+                                    <TableHead className="text-muted-foreground font-semibold tracking-wide">Role</TableHead>
+                                    <TableHead className="text-muted-foreground font-semibold tracking-wide">Status</TableHead>
+                                    <TableHead className="text-muted-foreground font-semibold tracking-wide">
                                         Last Login
                                     </TableHead>
-                                    <TableHead className="text-muted-foreground font-semibold tracking-wide w-12 no-select"></TableHead>
+                                    <TableHead className="text-muted-foreground font-semibold tracking-wide w-12"></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredUsers.map((user, index) => (
-                                    <TableRow
-                                        key={user.id}
-                                        className="border-border hover:bg-accent/50 smooth-transition animate-fade-in"
-                                        style={{ animationDelay: `${index * 50}ms` }}
-                                    >
-                                        <TableCell className="font-semibold text-foreground py-4 allow-select">{user.name}</TableCell>
-                                        <TableCell className="text-muted-foreground allow-select">{user.email}</TableCell>
-                                        <TableCell className="no-select">
-                                            <Badge
-                                                variant="secondary"
-                                                className="bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-xl px-3 py-1"
-                                            >
-                                                {user.role}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="no-select">
-                                            <Badge
-                                                variant="secondary"
-                                                className={`rounded-xl px-3 py-1 border ${
-                                                    user.status === "Active"
-                                                        ? "bg-green-500/20 text-green-400 border-green-500/30"
-                                                        : "bg-red-500/20 text-red-400 border-red-500/30"
-                                                }`}
-                                            >
-                                                {user.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-muted-foreground allow-select">{user.lastLogin}</TableCell>
-                                        <TableCell className="no-select">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent rounded-xl"
-                                                    >
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="bg-card border-border rounded-2xl shadow-2xl" align="end">
-                                                    <DropdownMenuItem
-                                                        className="text-foreground hover:bg-accent rounded-xl"
-                                                        onClick={() => setViewUser(user)}
-                                                    >
-                                                        View Details
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        className="text-foreground hover:bg-accent rounded-xl"
-                                                        onClick={() => setEditUser(user)}
-                                                    >
-                                                        Edit
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        className="text-red-400 hover:bg-accent rounded-xl"
-                                                        onClick={() => handleDeleteUser(user.id)}
-                                                    >
-                                                        Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                {users.map((user, index) => {
+                                    const statusLabel = user.isVerified ? "Active" : "Inactive"
+                                    return (
+                                        <TableRow
+                                            key={user.id}
+                                            className="border-border hover:bg-accent/50 animate-fade-in"
+                                            style={{ animationDelay: `${index * 50}ms` }}
+                                        >
+                                            <TableCell className="font-semibold text-foreground py-4">
+                                                {(currentPage - 1) * rowsPerPage + index + 1}
+                                            </TableCell>
+                                            <TableCell className="font-semibold text-foreground py-4">{user.name}</TableCell>
+                                            <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                                            <TableCell>
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-xl px-3 py-1"
+                                                >
+                                                    {user.role}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge
+                                                    variant="secondary"
+                                                    className={`rounded-xl px-3 py-1 border ${
+                                                        user.isVerified
+                                                            ? "bg-green-500/20 text-green-400 border-green-500/30"
+                                                            : "bg-red-500/20 text-red-400 border-red-500/30"
+                                                    }`}
+                                                >
+                                                    {statusLabel}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-muted-foreground">{user.lastLogin}</TableCell>
+                                            <TableCell>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent rounded-xl"
+                                                        >
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent className="bg-card border-border rounded-2xl shadow-2xl" align="end">
+                                                        <DropdownMenuItem
+                                                            className="text-foreground hover:bg-accent rounded-xl"
+                                                            onClick={() => setViewUser(user)}
+                                                        >
+                                                            View Details
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            className="text-foreground hover:bg-accent rounded-xl"
+                                                            onClick={() => setEditUser(user)}
+                                                        >
+                                                            Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            className="text-red-400 hover:bg-accent rounded-xl"
+                                                            onClick={() => handleDeleteUser(user.id)}
+                                                        >
+                                                            Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })}
                             </TableBody>
                         </Table>
+
+                        <div className="flex items-center justify-between px-6 py-4 bg-background border-t border-border">
+                            <div className="text-sm text-muted-foreground">
+                                Showing {(currentPage - 1) * rowsPerPage + 1}–
+                                {Math.min(currentPage * rowsPerPage, totalUsers)} of {totalUsers} users
+                            </div>
+
+                            <Pagination className="m-0">
+                                <PaginationContent>
+                                    <PaginationItem>
+                                        <PaginationPrevious
+                                            className={`${currentPage === 1 ?
+                                                "text-muted-foreground cursor-not-allowed hover:bg-transparent" :
+                                                "text-foreground hover:bg-accent cursor-pointer"}`}
+                                            onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                                        />
+                                    </PaginationItem>
+
+                                    {getPaginationItems().map((item, i) =>
+                                        item === "ellipsis" ? (
+                                            <PaginationItem key={`ellipsis-${i}`}>
+                                                <PaginationEllipsis className="text-muted-foreground" />
+                                            </PaginationItem>
+                                        ) : (
+                                            <PaginationItem key={item}>
+                                                <PaginationLink
+                                                    className={`cursor-pointer ${
+                                                        currentPage === item ?
+                                                            "bg-primary text-primary-foreground hover:bg-primary/90 font-medium" :
+                                                            "text-foreground hover:bg-accent font-normal"
+                                                    }`}
+                                                    isActive={currentPage === item}
+                                                    onClick={() => setCurrentPage(item as number)}
+                                                >
+                                                    {item}
+                                                </PaginationLink>
+                                            </PaginationItem>
+                                        )
+                                    )}
+
+                                    <PaginationItem>
+                                        <PaginationNext
+                                            className={`${currentPage >= totalPages ?
+                                                "text-muted-foreground cursor-not-allowed hover:bg-transparent" :
+                                                "text-foreground hover:bg-accent cursor-pointer"}`}
+                                            onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+                                        />
+                                    </PaginationItem>
+                                </PaginationContent>
+                            </Pagination>
+                        </div>
                     </div>
                 </Card>
             </div>

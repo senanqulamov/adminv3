@@ -75,12 +75,12 @@ export function ViewUserModal({ isOpen, onClose, user, onEdit }: ViewUserModalPr
                     <Badge
                         variant="secondary"
                         className={`rounded-xl border ${
-                            user.status === "Active"
+                            user.isVerified
                                 ? "bg-green-500/20 text-green-400 border-green-500/30"
                                 : "bg-red-500/20 text-red-400 border-red-500/30"
                         }`}
                     >
-                      {user.status}
+                      {user.isVerified ? "Active" : "Inactive"}
                     </Badge>
                   </div>
                 </div>
@@ -99,7 +99,11 @@ export function ViewUserModal({ isOpen, onClose, user, onEdit }: ViewUserModalPr
                   <Calendar className="h-5 w-5 text-[#98a891]/70" />
                   <div>
                     <p className="text-sm text-[#98a891]/70">Member Since</p>
-                    <p className="text-[#98a891]">January 2024</p>
+                    <p className="text-[#98a891]">
+                      {user.createdAt
+                          ? new Date(user.createdAt).toLocaleString("en-US", { month: "long", year: "numeric" })
+                          : ""}
+                    </p>
                   </div>
                 </div>
               </div>

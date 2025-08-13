@@ -1,23 +1,28 @@
 // API configuration and base functions
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://adminv3-b4gqe6epctd5gnad.canadacentral-01.azurewebsites.net"
 
 export interface ApiResponse<T> {
   data: T
   message: string
   success: boolean
+  error: boolean
   total?: number
 }
 
 export interface User {
-  id: number
+  id: string
   name: string
   email: string
+  bio: string
   role: string
-  status: "Active" | "Inactive"
-  lastLogin: string
-  avatar?: string
+  karmaPoints?: number
+  karmaQuants?: number
   createdAt: string
-  permissions: string[]
+  updatedAt: string
+  isAdmin: boolean
+  profilePicture?: string | null
+  isVerified: boolean
+  lastLogin?: string
 }
 
 export interface Translation {
@@ -87,13 +92,18 @@ class ApiClient {
     const response = await fetch(url, {
       headers: {
         "Content-Type": "application/json",
-        ...options?.headers,
+        ...(options?.headers ?? {}),
       },
       ...options,
     })
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`)
+      let errorMsg = `API Error: ${response.statusText}`
+      try {
+        const errorJson = await response.json()
+        errorMsg += ` - ${errorJson?.message ?? ""}`
+      } catch { }
+      throw new Error(errorMsg)
     }
 
     return response.json()
@@ -108,24 +118,24 @@ class ApiClient {
     if (params?.role) searchParams.append("role", params.role)
     if (params?.status) searchParams.append("status", params.status)
 
-    return this.request<User[]>(`/users?${searchParams}`)
+    return this.request<User[]>(`/auth/users?${searchParams}`)
   }
 
-  async createUser(user: Omit<User, "id" | "createdAt" | "lastLogin">) {
+  async createUser(user: Omit<User, "id" | "createdAt" | "updatedAt" | "lastLogin">) {
     return this.request<User>("/users", {
       method: "POST",
       body: JSON.stringify(user),
     })
   }
 
-  async updateUser(id: number, user: Partial<User>) {
+  async updateUser(id: string, user: Partial<User>) {
     return this.request<User>(`/users/${id}`, {
       method: "PUT",
       body: JSON.stringify(user),
     })
   }
 
-  async deleteUser(id: number) {
+  async deleteUser(id: string) {
     return this.request<void>(`/users/${id}`, {
       method: "DELETE",
     })
