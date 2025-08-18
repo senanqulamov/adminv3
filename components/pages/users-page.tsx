@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Search, MoreHorizontal, Users, Shield, Activity, FileText } from "lucide-react"
+import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Info, Plus, Search, MoreHorizontal, Users, Shield, Activity, FileText } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -13,6 +14,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { AnalyticsModal } from "@/components/modals/analytics-modal"
 import { AddUserModal } from "@/components/modals/add-user-modal"
 import { ViewUserModal } from "@/components/modals/view-user-modal"
+import { ViewUserDetailModal } from "@/components/modals/view-user-detail-modal"
 import { EditUserModal } from "@/components/modals/edit-user-modal"
 import { apiClient, User } from "@/lib/api"
 import {
@@ -73,6 +75,7 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
     }>({ isOpen: false, type: "users", title: "" })
     const [showAddUser, setShowAddUser] = useState(false)
     const [viewUser, setViewUser] = useState<User | null>(null)
+
     const [editUser, setEditUser] = useState<User | null>(null)
     const [searchQuery, setSearchQuery] = useState("") // Separate state for actual search query
     const [isSearching, setIsSearching] = useState(false)
@@ -290,7 +293,12 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
                                     <TableHead className="text-muted-foreground font-semibold tracking-wide">
                                         Last Login
                                     </TableHead>
-                                    <TableHead className="text-muted-foreground font-semibold tracking-wide w-12"></TableHead>
+                                    <TableHead className="text-muted-foreground font-semibold tracking-wide">
+                                        ID (details)
+                                    </TableHead>
+                                    <TableHead className="text-muted-foreground font-semibold tracking-wide w-12">
+                                        Actions
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -301,6 +309,7 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
                                             key={user.id}
                                             className="border-border hover:bg-accent/50 animate-fade-in"
                                             style={{ animationDelay: `${index * 50}ms` }}
+                                            // onClick={() => setViewUser(user)}
                                         >
                                             <TableCell className="font-semibold text-foreground py-4">
                                                 {(currentPage - 1) * rowsPerPage + index + 1}
@@ -328,6 +337,39 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-muted-foreground">{user.lastLogin}</TableCell>
+                                            <TableCell className="text-muted-foreground">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Badge
+                                                                variant="secondary"
+                                                                className="rounded-xl w-max border bg-gradient-to-r from-green-500/20 to-green-400/10 text-green-500 border-green-500/30 flex items-center gap-2 cursor-pointer px-3 py-1 transition-shadow hover:shadow-md"
+                                                                onClick={() => setViewUser(user)}
+                                                            >
+                                                                <Info className="h-4 w-4 mr-1" />
+                                                                <span className="font-mono text-xs">{user.id.slice(0, 6)}...</span>
+                                                            </Badge>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="flex items-center gap-2">
+                                                            <span className="font-mono text-xs">{user.id}</span>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-5 w-5 p-0 text-green-500 hover:text-green-700"
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText(user.id)
+                                                                    // TODO show success toast
+                                                                    // toast.success("Copied user ID!")
+                                                                }}
+                                                            >
+                                                                <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
+                                                                    <path d="M4 4V2.5A1.5 1.5 0 0 1 5.5 1h5A1.5 1.5 0 0 1 12 2.5V4M4 4h8M4 4v8.5A1.5 1.5 0 0 0 5.5 14h5A1.5 1.5 0 0 0 12 12.5V4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                                </svg>
+                                                            </Button>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </TableCell>
                                             <TableCell>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -444,8 +486,18 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
                 }}
             />
 
+            <ViewUserDetailModal
+                isOpen={!!viewUser}
+                onClose={() => setViewUser(null)}
+                user={viewUser}
+                onEdit={(user) => {
+                    setViewUser(null)
+                    setEditUser(user)
+                }}
+            />
+
             <EditUserModal
-                isOpen={!!editUser}
+                isOpen={!!editUser && !viewUser}
                 onClose={() => setEditUser(null)}
                 user={editUser}
                 onEdit={handleUserUpdated}
