@@ -19,7 +19,7 @@ import {
     Pie,
     Cell,
 } from "recharts"
-import { mockAnalytics } from "@/lib/mock-data"
+import { apiClient } from "@/lib/api"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 interface AnalyticsModalProps {
@@ -38,11 +38,14 @@ export function AnalyticsModal({ isOpen, onClose, type, title }: AnalyticsModalP
     useEffect(() => {
         if (isOpen) {
             setIsLoading(true)
-            // Simulate API call
-            setTimeout(() => {
-                setData(mockAnalytics[type as keyof typeof mockAnalytics])
-                setIsLoading(false)
-            }, 800)
+            if (type === "users") {
+                apiClient.getUsers({ page: 1, limit: 100 })
+                    .then(res => {
+                        setData({ total: res.total, users: res.data })
+                        setIsLoading(false)
+                    })
+                    .catch(() => setIsLoading(false))
+            }
         }
     }, [isOpen, type])
 

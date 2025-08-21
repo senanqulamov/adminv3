@@ -7,6 +7,7 @@ import { ProfilePage } from "@/components/pages/profile-page"
 import { SettingsPage } from "@/components/pages/settings-page"
 import { useAdmin } from "@/components/providers/admin-provider"
 import { usePathname } from "next/navigation"
+import { Toaster } from "react-hot-toast"
 
 interface AdminLayoutProps {
     children: React.ReactNode
@@ -38,6 +39,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div className="min-h-screen bg-[#0a0a0a]">
             <Header />
             {renderContent()}
+            <Toaster position="top-center" />
         </div>
     )
 }

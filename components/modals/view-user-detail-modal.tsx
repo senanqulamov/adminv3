@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/modal"
 import { User, Shield, Clock, Calendar } from "lucide-react"
 import type { User as UserType } from "@/lib/api"
+import toast from "react-hot-toast";
 
 interface ViewUserDetailModalProps {
     isOpen: boolean
@@ -26,6 +27,26 @@ interface ViewUserDetailModalProps {
 export function ViewUserDetailModal({ isOpen, onClose, user, onEdit }: ViewUserDetailModalProps) {
     if (!user) return null
 
+    const toastStyle = {
+        borderRadius: '10px',
+        background: '#333',
+        color: '#fff',
+    };
+
+    const handleCopyId = (user: UserType) => {
+        toast.promise(
+            navigator.clipboard.writeText(user.id),
+            {
+                loading: 'Copying...',
+                success: <b style={toastStyle}>ID of {user.name} copied!</b>,
+                error: <b style={toastStyle}>Could not copy.</b>,
+            },
+            {
+                style: toastStyle,
+            }
+        );
+    };
+
     return (
         <Modal open={isOpen} onOpenChange={onClose}>
             <ModalContent className="max-w-2xl bg-[#121212] border-[#3c4438]">
@@ -36,9 +57,9 @@ export function ViewUserDetailModal({ isOpen, onClose, user, onEdit }: ViewUserD
                             className="bg-orange-50/20 text-orange-500 border border-orange-500/30 rounded-xl px-3 py-1">
                             {user.name}
                         </Badge>
-                        <Badge
+                        <Badge onClick={() => handleCopyId(user)}
                             variant="secondary"
-                            className="bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-xl px-3 py-1">
+                            className="bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-xl px-3 py-1 cursor-pointer">
                             {user.id}
                         </Badge>
                     </ModalTitle>

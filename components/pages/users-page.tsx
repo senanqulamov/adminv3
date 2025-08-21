@@ -26,6 +26,7 @@ import {
     PaginationNext,
     PaginationEllipsis,
 } from "@/components/ui/pagination"
+import toast from "react-hot-toast"
 
 const statsCards = [
     {
@@ -75,6 +76,7 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
     }>({ isOpen: false, type: "users", title: "" })
     const [showAddUser, setShowAddUser] = useState(false)
     const [viewUser, setViewUser] = useState<User | null>(null)
+    const [viewUserDetailed, setViewUserDetailed] = useState<User | null>(null)
 
     const [editUser, setEditUser] = useState<User | null>(null)
     const [searchQuery, setSearchQuery] = useState("") // Separate state for actual search query
@@ -159,6 +161,26 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
         setEditUser(null)
     }
 
+    const toastStyle = {
+        borderRadius: '10px',
+        background: '#333',
+        color: '#fff',
+    };
+
+    const handleCopyId = (user: User) => {
+        toast.promise(
+            navigator.clipboard.writeText(user.id),
+            {
+                loading: 'Copying...',
+                success: <b style={toastStyle}>ID of {user.name} copied!</b>,
+                error: <b style={toastStyle}>Could not copy.</b>,
+            },
+            {
+                style: toastStyle,
+            }
+        );
+    };
+
     if (isLoading || externalLoading) {
         return (
             <div className="flex items-center justify-center h-full">
@@ -208,7 +230,7 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
                     </Button>
                 </div>
 
-                <Card className="bg-card-light border-border rounded-3xl p-8 shadow-2xl animate-scale-in">
+                <Card className="bg-card-main border-border rounded-3xl p-8 shadow-2xl animate-scale-in">
                     <div className="flex items-center justify-between mb-8">
                         <h2 className="text-xl font-semibold text-foreground tracking-tight">All Users</h2>
                         <div className="flex items-center space-x-4">
@@ -344,7 +366,7 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
                                                             <Badge
                                                                 variant="secondary"
                                                                 className="rounded-xl w-max border bg-gradient-to-r from-green-500/20 to-green-400/10 text-green-500 border-green-500/30 flex items-center gap-2 cursor-pointer px-3 py-1 transition-shadow hover:shadow-md"
-                                                                onClick={() => setViewUser(user)}
+                                                                onClick={() => setViewUserDetailed(user)}
                                                             >
                                                                 <Info className="h-4 w-4 mr-1" />
                                                                 <span className="font-mono text-xs">{user.id.slice(0, 6)}...</span>
@@ -356,11 +378,7 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 className="h-5 w-5 p-0 text-green-500 hover:text-green-700"
-                                                                onClick={() => {
-                                                                    navigator.clipboard.writeText(user.id)
-                                                                    // TODO show success toast
-                                                                    // toast.success("Copied user ID!")
-                                                                }}
+                                                                onClick={() => handleCopyId(user)}
                                                             >
                                                                 <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
                                                                     <path d="M4 4V2.5A1.5 1.5 0 0 1 5.5 1h5A1.5 1.5 0 0 1 12 2.5V4M4 4h8M4 4v8.5A1.5 1.5 0 0 0 5.5 14h5A1.5 1.5 0 0 0 12 12.5V4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -487,11 +505,11 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
             />
 
             <ViewUserDetailModal
-                isOpen={!!viewUser}
-                onClose={() => setViewUser(null)}
-                user={viewUser}
+                isOpen={!!viewUserDetailed}
+                onClose={() => setViewUserDetailed(null)}
+                user={viewUserDetailed}
                 onEdit={(user) => {
-                    setViewUser(null)
+                    setViewUserDetailed(null)
                     setEditUser(user)
                 }}
             />
