@@ -16,7 +16,7 @@ interface AdminLayoutProps {
 export function AdminLayout({ children }: AdminLayoutProps) {
     const { viewMode } = useAdmin()
     const pathname = usePathname()
-    const isDashboard = pathname === "/" || pathname === "/translations" || pathname === "/orders"
+    const isDashboard = pathname === "/" || pathname === "/translations" || pathname === "/orders" || pathname === "/spheres"
 
     const renderContent = () => {
         switch (viewMode) {

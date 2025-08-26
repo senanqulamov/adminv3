@@ -89,21 +89,28 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
     const fetchUsers = useCallback(async () => {
         setIsLoading(true)
         try {
-            const res = await apiClient.getUsers({
-                page: currentPage,
-                limit: rowsPerPage,
-                search: searchQuery,
-                role: roleFilter,
-                status: statusFilter
-            })
-
+            let res;
+            if (searchQuery) {
+                res = await apiClient.searchUsersByKeyword(searchQuery)
+            } else {
+                res = await apiClient.getUsers({
+                    page: currentPage,
+                    limit: rowsPerPage,
+                    role: roleFilter,
+                    status: statusFilter
+                })
+            }
             const mappedUsers = res.data.map((u: any) => ({
                 id: u.id?.toString() ?? "",
                 name: u.name ?? "",
+                surname: u.surname ?? "",
+                nick: u.nick ?? "",
+                title: u.title ?? "",
                 email: u.email ?? "",
                 bio: u.bio ?? "",
-                role: u.isAdmin ? "Admin" : (u.role ?? "User"),
+                role: u.isAdmin ? "Admin" : "User",
                 isVerified: !!u.isVerified,
+                isActive: u.isActive ?? false,
                 lastLogin: u.updatedAt ?? "",
                 karmaPoints: u.karmaPoints ?? 0,
                 karmaQuants: u.karmaQuants ?? 0,
@@ -112,9 +119,8 @@ export function UsersPage({ isLoading: externalLoading = false }: UsersPageProps
                 isAdmin: !!u.isAdmin,
                 updatedAt: u.updatedAt ?? "",
             }))
-
             setUsers(mappedUsers)
-            setTotalUsers(res.total ?? 0)
+            setTotalUsers(res.total ?? mappedUsers.length)
         } catch (err) {
             console.error("Error fetching users:", err)
         } finally {

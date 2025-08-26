@@ -12,16 +12,22 @@ export interface ApiResponse<T> {
 export interface User {
   id: string
   name: string
+  surname?: string
+  nick?: string
   email: string
-  bio: string
-  role: string
+  password?: string
+  title?: string
   karmaPoints?: number
   karmaQuants?: number
+  profilePicture?: string | null
+  bio?: string
+  isVerified: boolean
+  isAdmin: boolean
+  isActive?: boolean
   createdAt: string
   updatedAt: string
-  isAdmin: boolean
-  profilePicture?: string | null
-  isVerified: boolean
+  // Derived/compat fields for UI
+  role?: string
   lastLogin?: string
 }
 
@@ -86,6 +92,20 @@ export interface Analytics {
   }
 }
 
+export interface Sphere {
+  id: string
+  name: string
+  description?: string
+  type: "public" | "private" | string
+  isPrivate: boolean
+  coreHubId?: string
+  userId?: string
+  icon?: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 class ApiClient {
   private async request<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}${endpoint}`
@@ -139,6 +159,10 @@ class ApiClient {
     return this.request<void>(`/users/${id}`, {
       method: "DELETE",
     })
+  }
+
+  async searchUsersByKeyword(keyword: string) {
+    return this.request<User[]>(`/auth/user/search/${encodeURIComponent(keyword)}`)
   }
 
   // Translations API
@@ -237,6 +261,42 @@ class ApiClient {
 
   async getTranslationAnalytics() {
     return this.request<Analytics["translations"]>("/analytics/translations")
+  }
+
+  // Spheres API
+  async getSpheres(params?: { page?: number; limit?: number; search?: string; type?: string; status?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.append("page", params.page.toString())
+    if (params?.limit) searchParams.append("limit", params.limit.toString())
+    if (params?.search) searchParams.append("search", params.search)
+    if (params?.type) searchParams.append("type", params.type)
+    if (params?.status) searchParams.append("status", params.status)
+
+    return this.request<Sphere[]>(`/spheres?${searchParams}`)
+  }
+
+  async getSphere(id: string) {
+    return this.request<Sphere>(`/spheres/${id}`)
+  }
+
+  async createSphere(sphere: Omit<Sphere, "id" | "createdAt" | "updatedAt">) {
+    return this.request<Sphere>("/spheres", {
+      method: "POST",
+      body: JSON.stringify(sphere),
+    })
+  }
+
+  async updateSphere(id: string, sphere: Partial<Sphere>) {
+    return this.request<Sphere>(`/spheres/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(sphere),
+    })
+  }
+
+  async deactivateSphere(id: string) {
+    return this.request<void>(`/spheres/${id}/deactivate`, {
+      method: "POST",
+    })
   }
 }
 
